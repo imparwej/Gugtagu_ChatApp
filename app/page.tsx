@@ -1,64 +1,99 @@
-import Image from "next/image";
+"use client";
+
+import React, { useEffect, useRef } from "react";
+import { Sidebar } from "@/components/sidebar/Sidebar";
+import { ChatHeader } from "@/components/chat/ChatHeader";
+import { MessageBubble, TypingIndicator } from "@/components/chat/MessageBubble";
+import { MessageInput } from "@/components/chat/MessageInput";
+import { NotificationPermissionModal } from "@/components/notifications/NotificationPermissionModal";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { useChatStore } from "@/store/chatStore";
+import { motion, AnimatePresence } from "framer-motion";
+import { MessageSquare } from "lucide-react";
 
 export default function Home() {
+  const { messages, activeChatId, typingUsers } = useChatStore();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const activeMessages = messages.filter((m) => m.chatId === activeChatId);
+  const isTyping = activeChatId && typingUsers.includes(activeChatId);
+
+  // Auto-scroll to bottom with smooth behavior
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [activeMessages, isTyping, activeChatId]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex h-screen w-full overflow-hidden bg-[#000000] text-white">
+      {/* Global Modals & Notifications */}
+      <NotificationPermissionModal />
+      <NotificationCenter />
+
+      {/* Sidebar Container */}
+      <aside className="hidden w-[30%] border-r border-white/5 bg-[#0f0f0f] md:block h-full">
+        <Sidebar />
+      </aside>
+
+      {/* Chat Area Container */}
+      <main className="flex-1 flex flex-col h-full bg-[#000000] relative">
+        <AnimatePresence mode="wait">
+          {!activeChatId ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex-1 flex flex-col items-center justify-center p-4 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900/20 via-black to-black"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <div className="p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl shadow-2xl flex flex-col items-center text-center max-w-sm">
+                <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                  <MessageSquare size={40} className="text-white/20" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2 tracking-tight">Select a conversation</h2>
+                <p className="text-zinc-500 text-sm font-light">
+                  Choose a chat from the sidebar to start messaging your friends and colleagues.
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col h-full overflow-hidden"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+              <ChatHeader />
+
+              <div
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar"
+              >
+                <div className="max-w-4xl mx-auto flex flex-col pt-4">
+                  {activeMessages.map((msg) => (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                    />
+                  ))}
+
+                  {isTyping && (
+                    <div className="mt-2 text-left">
+                      <TypingIndicator />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <MessageInput />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
