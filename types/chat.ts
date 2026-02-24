@@ -6,15 +6,22 @@ export interface User {
     online: boolean;
 }
 
+export type MessageType = "text" | "image" | "file" | "voice";
+export type MessageStatus = "sent" | "delivered" | "read";
+
 export interface Message {
     id: string;
     chatId: string;
     senderId: string;
-    text: string;
+    senderName?: string; // For group chats
+    text?: string;
     timestamp: string;
-    type: "sent" | "received";
-    status: "sent" | "delivered" | "read";
+    type: MessageType;
+    status: MessageStatus;
     replyTo?: Message;
+    contentUrl?: string; // For images, files, voice
+    fileName?: string;
+    duration?: number; // For voice messages
 }
 
 export interface Chat {
@@ -25,6 +32,19 @@ export interface Chat {
     timestamp: string;
     online: boolean;
     unreadCount: number;
+    isGroup?: boolean;
+    members?: User[];
+    admins?: string[]; // IDs
+}
+
+export interface Story {
+    id: string;
+    userId: string;
+    userName: string;
+    userAvatar: string;
+    mediaUrl: string;
+    timestamp: string;
+    viewed: boolean;
 }
 
 export interface Notification {
@@ -45,6 +65,7 @@ export interface ChatState {
     currentUser: User;
     chats: Chat[];
     messages: Message[];
+    stories: Story[];
     activeChatId: string | null;
     onlineUsers: string[];
     typingUsers: string[];
@@ -59,11 +80,16 @@ export interface ChatState {
     deviceToken: string | null;
     isNotificationCenterOpen: boolean;
 
+    // Actions
     setActiveChat: (chatId: string | null) => void;
-    sendMessage: (text: string) => void;
+    sendMessage: (text: string, type?: MessageType, optional?: any) => void;
     setTyping: (userId: string, isTyping: boolean) => void;
     setReplyingTo: (message: Message | null) => void;
     deleteMessage: (messageId: string) => void;
+    markAsRead: (chatId: string) => void;
+
+    // Story Actions
+    markStoryViewed: (storyId: string) => void;
 
     // Notification Actions
     setNotificationPermission: (status: NotificationPermissionStatus) => void;
@@ -71,4 +97,5 @@ export interface ChatState {
     setDeviceToken: (token: string | null) => void;
     markNotificationAsRead: (notificationId: string) => void;
     toggleNotificationCenter: () => void;
+    addInAppNotification: (notification: Notification) => void;
 }

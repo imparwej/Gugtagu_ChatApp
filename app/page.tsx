@@ -7,6 +7,7 @@ import { MessageBubble, TypingIndicator } from "@/components/chat/MessageBubble"
 import { MessageInput } from "@/components/chat/MessageInput";
 import { NotificationPermissionModal } from "@/components/notifications/NotificationPermissionModal";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { InAppNotification } from "@/components/notifications/InAppNotification";
 import { useChatStore } from "@/store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare } from "lucide-react";
@@ -26,13 +27,14 @@ export default function Home() {
         behavior: "smooth",
       });
     }
-  }, [activeMessages, isTyping, activeChatId]);
+  }, [activeMessages.length, isTyping, activeChatId]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#000000] text-white">
       {/* Global Modals & Notifications */}
       <NotificationPermissionModal />
       <NotificationCenter />
+      <InAppNotification />
 
       {/* Sidebar Container */}
       <aside className="hidden w-[30%] border-r border-white/5 bg-[#0f0f0f] md:block h-full">

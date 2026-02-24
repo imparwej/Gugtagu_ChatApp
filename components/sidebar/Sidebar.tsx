@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { Search, Settings, Bell } from "lucide-react";
+import { Search, Settings, Bell, Users } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
+import { StatusStories } from "../status/StatusStories";
 
 export const Sidebar = () => {
     const {
@@ -19,11 +20,11 @@ export const Sidebar = () => {
             {/* Top Profile Section */}
             <div className="p-4 flex items-center justify-between border-b border-white/5">
                 <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center overflow-hidden border border-white/10 shadow-lg">
+                    <div className="relative w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center overflow-hidden border border-white/10 shadow-lg group cursor-pointer">
                         <img
                             src="https://api.dicebear.com/7.x/avataaars/svg?seed=Profile"
                             alt="Profile"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                     </div>
                     <span className="font-semibold text-sm tracking-tight text-white/90">Me</span>
@@ -48,8 +49,11 @@ export const Sidebar = () => {
                 </div>
             </div>
 
+            {/* Status Section */}
+            <StatusStories />
+
             {/* Search Bar */}
-            <div className="p-4">
+            <div className="px-4 py-2">
                 <div className="relative group">
                     <Search
                         size={18}
@@ -64,7 +68,7 @@ export const Sidebar = () => {
             </div>
 
             {/* Chat List */}
-            <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-2 custom-scrollbar mt-2">
                 <AnimatePresence>
                     {chats.map((chat) => (
                         <motion.div
@@ -83,25 +87,33 @@ export const Sidebar = () => {
                                     <img
                                         src={chat.avatar}
                                         alt={chat.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                     />
                                 </div>
-                                {chat.online && (
+                                {chat.online && !chat.isGroup && (
                                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-white border-2 border-[#0f0f0f] rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"></div>
+                                )}
+                                {chat.isGroup && (
+                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10">
+                                        <Users size={10} />
+                                    </div>
                                 )}
                             </div>
 
                             {/* Chat Info */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start mb-0.5">
-                                    <h3 className="font-semibold text-sm truncate text-white/90 tracking-tight">{chat.name}</h3>
+                                    <h3 className="font-semibold text-sm truncate text-white/90 tracking-tight flex items-center gap-1.5">
+                                        {chat.name}
+                                        {chat.isGroup && <span className="text-[8px] bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-tighter text-zinc-400">Group</span>}
+                                    </h3>
                                     <span className="text-[10px] text-zinc-500 font-medium">{chat.timestamp}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <p className="text-xs text-zinc-500 truncate pr-2 font-light">
                                         {chat.lastMessage}
                                     </p>
-                                    {chat.unreadCount > 0 && (
+                                    {notificationCount > 0 && chat.unreadCount > 0 && (
                                         <motion.span
                                             animate={{ scale: [1, 1.1, 1] }}
                                             transition={{ duration: 2, repeat: Infinity }}

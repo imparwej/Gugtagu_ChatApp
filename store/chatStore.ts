@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ChatState, Message, Chat, User, Notification } from "../types/chat";
+import { ChatState, Message, Chat, User, Notification, Story, MessageType } from "../types/chat";
 
 const MOCK_CURRENT_USER: User = {
     id: "me",
@@ -28,27 +28,41 @@ const MOCK_CHATS: Chat[] = [
         online: false,
         unreadCount: 0,
     },
+    {
+        id: "g1",
+        name: "Project Alpha",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alpha",
+        lastMessage: "Meeting at 5?",
+        timestamp: "12:00 PM",
+        online: true,
+        unreadCount: 5,
+        isGroup: true,
+        members: [
+            { id: "1", name: "Aman Gupta", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aman", status: "", online: true },
+            { id: "2", name: "Sarah Chen", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah", status: "", online: false },
+        ],
+        admins: ["1"]
+    }
 ];
 
-const MOCK_NOTIFICATIONS: Notification[] = [
+const MOCK_STORIES: Story[] = [
     {
-        id: "n1",
-        type: "message",
-        title: "Aman Gupta",
-        body: "Hey! Let's catch up tomorrow!",
-        senderId: "1",
-        chatId: "1",
-        timestamp: "10:30 PM",
-        read: false,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aman",
+        id: "s1",
+        userId: "1",
+        userName: "Aman Gupta",
+        userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aman",
+        mediaUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1000",
+        timestamp: "2h ago",
+        viewed: false,
     },
     {
-        id: "n2",
-        type: "system",
-        title: "Security Update",
-        body: "Your password was changed successfully.",
-        timestamp: "Yesterday",
-        read: true,
+        id: "s2",
+        userId: "2",
+        userName: "Sarah Chen",
+        userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+        mediaUrl: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000",
+        timestamp: "5h ago",
+        viewed: true,
     }
 ];
 
@@ -59,7 +73,7 @@ const MOCK_MESSAGES: Message[] = [
         senderId: "1",
         text: "Hey! How's the project going?",
         timestamp: "10:00 PM",
-        type: "received",
+        type: "text",
         status: "read",
     },
     {
@@ -68,24 +82,25 @@ const MOCK_MESSAGES: Message[] = [
         senderId: "me",
         text: "It's going great. Just finished the layout.",
         timestamp: "10:01 PM",
-        type: "sent",
+        type: "text",
         status: "read",
     },
 ];
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
     currentUser: MOCK_CURRENT_USER,
     chats: MOCK_CHATS,
     messages: MOCK_MESSAGES,
+    stories: MOCK_STORIES,
     activeChatId: null,
     onlineUsers: ["1"],
     typingUsers: [],
-    unreadCounts: { "1": 2 },
-    notificationCount: 1, // Start with 1 unread notification
+    unreadCounts: { "1": 2, "g1": 5 },
+    notificationCount: 1,
     replyingTo: null,
 
     // Notification State
-    notifications: MOCK_NOTIFICATIONS,
+    notifications: [],
     notificationPermission: "default",
     fcmToken: null,
     deviceToken: null,
@@ -95,9 +110,12 @@ export const useChatStore = create<ChatState>((set) => ({
         set((state) => {
             if (!chatId) return { activeChatId: null, replyingTo: null, isNotificationCenterOpen: false };
 
-            // Simulate typing when switching
             const isNewChat = state.activeChatId !== chatId;
             if (isNewChat) {
+                // Mark as read in store
+                const unreadCounts = { ...state.unreadCounts, [chatId]: 0 };
+
+                // Simulation: Typing indicator
                 setTimeout(() => {
                     set((s) => ({ typingUsers: [...s.typingUsers, chatId] }));
                     setTimeout(() => {
@@ -106,42 +124,57 @@ export const useChatStore = create<ChatState>((set) => ({
                         }));
                     }, 3000);
                 }, 500);
+
+                return {
+                    activeChatId: chatId,
+                    unreadCounts,
+                    isNotificationCenterOpen: false,
+                    replyingTo: null,
+                };
             }
-
-            return {
-                activeChatId: chatId,
-                unreadCounts: { ...state.unreadCounts, [chatId]: 0 },
-                replyingTo: null,
-                isNotificationCenterOpen: false, // Close center when opening chat
-            };
+            return { activeChatId: chatId, isNotificationCenterOpen: false };
         }),
 
-    sendMessage: (text) =>
-        set((state) => {
-            if (!state.activeChatId) return state;
+    sendMessage: (text, type = "text", optional = {}) => {
+        const state = get();
+        if (!state.activeChatId) return;
 
-            const newMessage: Message = {
-                id: Math.random().toString(36).substring(7),
-                chatId: state.activeChatId,
-                senderId: "me",
-                text,
-                timestamp: new Date().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-                type: "sent",
-                status: "sent",
-                replyTo: state.replyingTo || undefined,
-            };
+        const messageId = Math.random().toString(36).substring(7);
+        const newMessage: Message = {
+            id: messageId,
+            chatId: state.activeChatId,
+            senderId: "me",
+            text,
+            timestamp: new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            }),
+            type,
+            status: "sent",
+            replyTo: state.replyingTo || undefined,
+            ...optional
+        };
 
-            return {
-                messages: [...state.messages, newMessage],
-                replyingTo: null,
-                chats: state.chats.map((c) =>
-                    c.id === state.activeChatId ? { ...c, lastMessage: text } : c
-                ),
-            };
-        }),
+        set((state) => ({
+            messages: [...state.messages, newMessage],
+            replyingTo: null,
+            chats: state.chats.map((c) =>
+                c.id === state.activeChatId ? { ...c, lastMessage: type === "text" ? text : `[${type}]` } : c
+            ),
+        }));
+
+        // Status Lifecycle Simulation
+        setTimeout(() => {
+            set((state) => ({
+                messages: state.messages.map(m => m.id === messageId ? { ...m, status: "delivered" } : m)
+            }));
+            setTimeout(() => {
+                set((state) => ({
+                    messages: state.messages.map(m => m.id === messageId ? { ...m, status: "read" } : m)
+                }));
+            }, 2000);
+        }, 1000);
+    },
 
     setTyping: (userId, isTyping) =>
         set((state) => ({
@@ -157,7 +190,16 @@ export const useChatStore = create<ChatState>((set) => ({
             messages: state.messages.filter((m) => m.id !== messageId),
         })),
 
-    // Notification Actions
+    markAsRead: (chatId) =>
+        set((state) => ({
+            unreadCounts: { ...state.unreadCounts, [chatId]: 0 }
+        })),
+
+    markStoryViewed: (storyId) =>
+        set((state) => ({
+            stories: state.stories.map(s => s.id === storyId ? { ...s, viewed: true } : s)
+        })),
+
     setNotificationPermission: (status) => set({ notificationPermission: status }),
     setFcmToken: (token) => set({ fcmToken: token }),
     setDeviceToken: (token) => set({ deviceToken: token }),
@@ -173,4 +215,10 @@ export const useChatStore = create<ChatState>((set) => ({
         }),
     toggleNotificationCenter: () =>
         set((state) => ({ isNotificationCenterOpen: !state.isNotificationCenterOpen })),
+
+    addInAppNotification: (notification) =>
+        set((state) => ({
+            notifications: [notification, ...state.notifications],
+            notificationCount: state.notificationCount + 1
+        })),
 }));

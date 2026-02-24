@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, CheckCheck, Reply, Trash2 } from "lucide-react";
+import { Check, CheckCheck, Reply, Trash2, FileText, Download, Play, Pause, User } from "lucide-react";
 import { Message } from "../../types/chat";
 import { useChatStore } from "../../store/chatStore";
 
@@ -30,10 +30,71 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = ({ msg }: MessageBubbleProps) => {
-    const { id, text, type, timestamp, status, replyTo } = msg;
-    const isSent = type === "sent";
+    const { id, text, type, timestamp, status, replyTo, contentUrl, fileName, duration, senderName, senderId } = msg;
+    const isSent = senderId === "me";
     const [isHovered, setIsHovered] = useState(false);
-    const { setReplyingTo, deleteMessage } = useChatStore();
+    const [isPlaying, setIsPlaying] = useState(false);
+    const { setReplyingTo, deleteMessage, chats, activeChatId } = useChatStore();
+
+    const activeChat = chats.find(c => c.id === activeChatId);
+    const isGroup = activeChat?.isGroup;
+    const isAdmin = activeChat?.admins?.includes(senderId);
+
+    const renderContent = () => {
+        switch (type) {
+            case "image":
+                return (
+                    <div className="relative group/img overflow-hidden rounded-xl">
+                        <img src={contentUrl} alt="Sent image" className="max-w-full max-h-60 object-cover cursor-pointer hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                            <Download size={20} className="text-white" />
+                        </div>
+                    </div>
+                );
+            case "file":
+                return (
+                    <div className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/5">
+                        <div className="p-2 bg-white/10 rounded-lg">
+                            <FileText size={20} className="text-white/80" />
+                        </div>
+                        <div className="flex flex-col min-w-0 pr-4">
+                            <span className="text-xs font-medium truncate text-white/90">{fileName}</span>
+                            <span className="text-[10px] text-zinc-500">Document</span>
+                        </div>
+                        <button className="p-1.5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-all">
+                            <Download size={14} />
+                        </button>
+                    </div>
+                );
+            case "voice":
+                return (
+                    <div className="flex items-center gap-3 min-w-[160px]">
+                        <button
+                            onClick={() => setIsPlaying(!isPlaying)}
+                            className="w-10 h-10 flex-shrink-0 bg-white/10 border border-white/10 rounded-full flex items-center justify-center text-white/80 hover:bg-white/20 transition-all"
+                        >
+                            {isPlaying ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" className="ml-0.5" />}
+                        </button>
+                        <div className="flex-1 flex flex-col gap-1">
+                            {/* Fake Waveform */}
+                            <div className="flex items-end gap-[2px] h-3">
+                                {[...Array(20)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        animate={isPlaying ? { height: [4, Math.random() * 12 + 4, 4] } : { height: 4 }}
+                                        transition={{ duration: 0.4, repeat: Infinity, delay: i * 0.05 }}
+                                        className={`w-[3px] rounded-full ${isPlaying && Math.random() > 0.5 ? "bg-white" : "bg-white/20"}`}
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-[9px] text-zinc-500 font-mono">0:{duration?.toString().padStart(2, '0')}</span>
+                        </div>
+                    </div>
+                );
+            default:
+                return <p className="leading-relaxed whitespace-pre-wrap">{text}</p>;
+        }
+    };
 
     return (
         <motion.div
@@ -41,9 +102,17 @@ export const MessageBubble = ({ msg }: MessageBubbleProps) => {
             animate={{ x: 0, opacity: 1 }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`flex flex-col ${isSent ? "items-end" : "items-start"} mb-4 relative group`}
+            className={`flex flex-col ${isSent ? "items-end ml-12" : "items-start mr-12"} mb-4 relative group`}
         >
-            {/* Action Buttons (Reply/Delete) */}
+            {/* Sender Name (Groups Only) */}
+            {isGroup && !isSent && (
+                <div className="flex items-center gap-1.5 mb-1 ml-1">
+                    <span className="text-[10px] font-bold text-zinc-400 tracking-tight uppercase">{senderName || "Unknown"}</span>
+                    {isAdmin && <span className="text-[8px] bg-white/10 border border-white/10 px-1.5 py-0.5 rounded text-white font-bold tracking-tighter uppercase">Admin</span>}
+                </div>
+            )}
+
+            {/* Action Buttons */}
             <AnimatePresence>
                 {isHovered && (
                     <motion.div
@@ -71,37 +140,43 @@ export const MessageBubble = ({ msg }: MessageBubbleProps) => {
             </AnimatePresence>
 
             <div
-                className={`max-w-[80%] md:max-w-[70%] rounded-2xl text-sm leading-relaxed overflow-hidden shadow-lg transition-all duration-300 ${isSent
+                className={`max-w-full rounded-[1.5rem] text-sm leading-relaxed overflow-hidden shadow-2xl transition-all duration-500 ${isSent
                         ? "bg-zinc-800 text-white border border-white/5"
-                        : "bg-white/5 backdrop-blur-xl border border-white/10 text-zinc-100"
-                    } ${isHovered ? "ring-1 ring-white/10" : ""}`}
+                        : "bg-white/5 backdrop-blur-3xl border border-white/10 text-zinc-100"
+                    } ${isHovered ? "ring-1 ring-white/10 scale-[1.01]" : ""}`}
             >
                 {/* Reply Context */}
                 {replyTo && (
-                    <div className={`p-2 mb-1 border-l-2 border-white/20 bg-white/5 text-[11px] opacity-70`}>
-                        <p className="font-bold mb-0.5">{replyTo.senderId === "me" ? "Me" : "Them"}</p>
-                        <p className="truncate">{replyTo.text}</p>
+                    <div
+                        className={`p-2.5 mb-1 border-l-2 border-white/20 bg-white/5 cursor-pointer hover:bg-white/10 transition-all`}
+                        onClick={() => {
+                            const el = document.getElementById(replyTo.id);
+                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                    >
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Replying to {replyTo.senderId === "me" ? "Me" : "Them"}</p>
+                        <p className="text-xs truncate text-zinc-400">{replyTo.text || `[${replyTo.type}]`}</p>
                     </div>
                 )}
 
-                <div className="p-3.5">
-                    <p>{text}</p>
+                <div className={`${type === 'text' ? 'p-3.5 px-4' : 'p-2'}`}>
+                    {renderContent()}
                 </div>
             </div>
 
-            <div className={`flex items-center gap-1.5 mt-1 px-1 ${isSent ? "flex-row" : "flex-row-reverse"}`}>
-                <span className="text-[10px] text-zinc-500 font-medium tracking-tight">{timestamp}</span>
+            <div id={id} className={`flex items-center gap-1.5 mt-1.5 px-1.5 ${isSent ? "flex-row" : "flex-row-reverse"}`}>
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">{timestamp}</span>
                 {isSent && (
-                    <span className="text-zinc-500">
+                    <div className="flex items-center">
                         {status === "sent" ? (
-                            <Check size={12} />
+                            <Check size={12} className="text-zinc-600" />
                         ) : (
                             <CheckCheck
                                 size={12}
-                                className={status === "read" ? "text-zinc-300" : "text-zinc-500"}
+                                className={status === "read" ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" : "text-zinc-500"}
                             />
                         )}
-                    </span>
+                    </div>
                 )}
             </div>
         </motion.div>
