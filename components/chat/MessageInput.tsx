@@ -1,21 +1,25 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Smile, Paperclip, Send, X, Braces, Mic, StopCircle, Image as ImageIcon, FileText } from "lucide-react";
+import { Smile, Paperclip, Send, X, Mic, StopCircle, Camera } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
-
-const MOCK_EMOJIS = ["😀", "😂", "😍", "🎉", "🔥", "👍", "❤️", "🤔", "🙌", "✨", "🚀", "💡"];
+import { AttachmentMenu } from "./AttachmentMenu";
+import { CameraUI } from "./CameraUI";
 
 export const MessageInput = () => {
     const [text, setText] = useState("");
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const emojiPickerRef = useRef<HTMLDivElement>(null);
 
-    const { sendMessage, replyingTo, setReplyingTo } = useChatStore();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const {
+        sendMessage,
+        replyingTo,
+        setReplyingTo,
+        activeOverlay,
+        setOverlay
+    } = useChatStore();
 
     const handleSend = () => {
         if (text.trim()) {
@@ -24,21 +28,16 @@ export const MessageInput = () => {
         }
     };
 
-    const addEmoji = (emoji: string) => {
-        setText(prev => prev + emoji);
-        setShowEmojiPicker(false);
-    };
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const isImage = file.type.startsWith("image/");
             const url = URL.createObjectURL(file);
-
             sendMessage("", isImage ? "image" : "file", {
                 contentUrl: url,
                 fileName: file.name
             });
+            setOverlay("none");
         }
     };
 
@@ -57,49 +56,52 @@ export const MessageInput = () => {
         sendMessage("", "voice", { duration: recordingTime });
     };
 
-    // Click outside emoji picker
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
-                setShowEmojiPicker(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
     return (
-        <div className="sticky bottom-0 p-4 bg-[#000000] border-t border-white/5">
-            <div className="max-w-6xl mx-auto flex flex-col gap-2">
+        <div className="p-6 bg-black border-t border-white/5 relative z-30">
+            <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
 
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept="image/*,.pdf,.doc,.docx"
-                />
+            <div className="max-w-4xl mx-auto flex flex-col gap-4">
+                {/* Overlays */}
+                <AnimatePresence>
+                    {activeOverlay === "attachment" && (
+                        <AttachmentMenu
+                            onSelect={(type) => {
+                                if (type === "camera") setOverlay("camera");
+                                else if (type === "document" || type === "gallery") fileInputRef.current?.click();
+                                else {
+                                    sendMessage(`Shared ${type}`, "text");
+                                    setOverlay("none");
+                                }
+                            }}
+                        />
+                    )}
+                    {activeOverlay === "camera" && (
+                        <CameraUI
+                            onCapture={(img) => {
+                                sendMessage("", "image", { contentUrl: img });
+                                setOverlay("none");
+                            }}
+                            onClose={() => setOverlay("none")}
+                        />
+                    )}
+                </AnimatePresence>
 
                 {/* Reply Preview */}
                 <AnimatePresence>
                     {replyingTo && (
                         <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="bg-zinc-900/80 backdrop-blur-xl border border-white/10 p-3 rounded-2xl flex items-center justify-between shadow-2xl"
+                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                            className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center justify-between backdrop-blur-3xl shadow-2xl"
                         >
-                            <div className="flex flex-col min-w-0 pr-4">
-                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 flex items-center gap-1">
-                                    Replying to <Braces size={10} />
-                                </span>
-                                <p className="text-xs text-zinc-500 truncate italic">
-                                    "{replyingTo.text}"
-                                </p>
+                            <div className="flex-1 min-w-0 pr-8">
+                                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1 block">Replying to {replyingTo.senderId === 'me' ? 'Me' : 'Contact'}</span>
+                                <p className="text-xs text-zinc-500 truncate italic">"{replyingTo.text || `[${replyingTo.type}]`}"</p>
                             </div>
                             <button
                                 onClick={() => setReplyingTo(null)}
-                                className="p-1.5 hover:bg-white/10 rounded-xl transition-all text-zinc-500 hover:text-white"
+                                className="p-2 hover:bg-white/10 rounded-xl transition-all text-zinc-500 hover:text-white"
                             >
                                 <X size={16} />
                             </button>
@@ -107,42 +109,25 @@ export const MessageInput = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Emoji Picker */}
-                <AnimatePresence>
-                    {showEmojiPicker && (
-                        <motion.div
-                            ref={emojiPickerRef}
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            className="absolute bottom-20 left-4 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 p-3 rounded-2xl shadow-2xl grid grid-cols-4 gap-2 z-50"
-                        >
-                            {MOCK_EMOJIS.map(emoji => (
-                                <button
-                                    key={emoji}
-                                    onClick={() => addEmoji(emoji)}
-                                    className="text-2xl p-2 hover:bg-white/5 rounded-xl transition-all hover:scale-110 active:scale-90"
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 bg-white/5 border border-white/5 p-1 rounded-2xl">
                         <button
-                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                            className={`p-2 transition-all duration-300 rounded-xl ${showEmojiPicker ? "text-white bg-white/10" : "text-zinc-500 hover:text-white hover:bg-white/5"}`}
+                            onClick={() => setOverlay(activeOverlay === "emoji" ? "none" : "emoji")}
+                            className={`p-2.5 rounded-xl transition-all ${activeOverlay === "emoji" ? "bg-white text-black" : "text-zinc-500 hover:text-white hover:bg-white/5"}`}
                         >
-                            <Smile size={20} />
+                            <Smile size={20} strokeWidth={2} />
                         </button>
                         <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300"
+                            onClick={() => setOverlay(activeOverlay === "attachment" ? "none" : "attachment")}
+                            className={`p-2.5 rounded-xl transition-all ${activeOverlay === "attachment" ? "bg-white text-black" : "text-zinc-500 hover:text-white hover:bg-white/5"}`}
                         >
-                            <Paperclip size={20} />
+                            <Paperclip size={20} strokeWidth={2} />
+                        </button>
+                        <button
+                            onClick={() => setOverlay("camera")}
+                            className="p-2.5 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all"
+                        >
+                            <Camera size={20} strokeWidth={2} />
                         </button>
                     </div>
 
@@ -154,41 +139,36 @@ export const MessageInput = () => {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    className="w-full bg-zinc-900 border border-white/20 rounded-2xl py-3 px-4 flex items-center justify-between"
+                                    className="w-full bg-white/5 border border-white/20 rounded-2xl py-3 px-6 flex items-center justify-between backdrop-blur-3xl"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                                        <span className="text-sm font-medium text-white">Recording...</span>
-                                        <span className="text-xs text-zinc-500 font-mono">0:{recordingTime.toString().padStart(2, '0')}</span>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                                        <span className="text-xs font-black uppercase tracking-[0.2em] text-white/90">Recording</span>
+                                        <span className="text-xs text-zinc-500 font-mono font-bold tracking-tighter">0:{recordingTime.toString().padStart(2, '0')}</span>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        {/* Simplified Waveform Mock */}
-                                        <div className="flex items-end gap-0.5 h-4">
-                                            {[1, 2, 3, 2, 1, 2, 3, 2, 1].map((h, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    animate={{ height: [h * 4, (h + 1) * 4, h * 4] }}
-                                                    transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
-                                                    className="w-0.5 bg-white/40 rounded-full"
-                                                />
-                                            ))}
-                                        </div>
-                                        <button onClick={() => setIsRecording(false)} className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white">Cancel</button>
-                                    </div>
+                                    <button
+                                        onClick={() => setIsRecording(false)}
+                                        className="text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
                                 </motion.div>
                             ) : (
-                                <motion.input
+                                <motion.div
                                     key="input"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    type="text"
-                                    value={text}
-                                    onChange={(e) => setText(e.target.value)}
-                                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                                    placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/5 transition-all duration-300"
-                                />
+                                    className="relative flex items-center"
+                                >
+                                    <input
+                                        type="text"
+                                        value={text}
+                                        onChange={(e) => setText(e.target.value)}
+                                        onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                                        placeholder="Type a message..."
+                                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-3.5 px-6 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-white/10 focus:bg-white/10 transition-all font-medium"
+                                    />
+                                </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
@@ -198,38 +178,38 @@ export const MessageInput = () => {
                             {isRecording ? (
                                 <motion.button
                                     key="stop"
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
                                     onClick={stopRecording}
-                                    className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-lg active:scale-95"
+                                    whileTap={{ scale: 0.9 }}
+                                    className="p-3.5 bg-white text-black rounded-2xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                                 >
-                                    <StopCircle size={20} />
+                                    <StopCircle size={24} fill="black" />
                                 </motion.button>
                             ) : (
-                                <motion.button
-                                    key="mic"
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
-                                    onClick={() => setIsRecording(true)}
-                                    className={`p-3 rounded-full transition-all shadow-lg active:scale-95 ${text.trim() ? "hidden" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white"}`}
-                                >
-                                    <Mic size={20} />
-                                </motion.button>
+                                <div className="flex items-center">
+                                    {!text.trim() ? (
+                                        <motion.button
+                                            key="mic"
+                                            onClick={() => setIsRecording(true)}
+                                            whileTap={{ scale: 0.9 }}
+                                            className="p-3.5 bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 rounded-2xl transition-all"
+                                        >
+                                            <Mic size={24} strokeWidth={2} />
+                                        </motion.button>
+                                    ) : (
+                                        <motion.button
+                                            key="send"
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            onClick={handleSend}
+                                            whileTap={{ scale: 0.9 }}
+                                            className="p-3.5 bg-white text-black rounded-2xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                                        >
+                                            <Send size={22} fill="black" />
+                                        </motion.button>
+                                    )}
+                                </div>
                             )}
                         </AnimatePresence>
-
-                        {text.trim() && (
-                            <motion.button
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                onClick={handleSend}
-                                className="p-3 bg-white text-black rounded-full hover:bg-zinc-200 transition-all shadow-lg shadow-white/5 active:scale-95"
-                            >
-                                <Send size={18} fill="currentColor" />
-                            </motion.button>
-                        )}
                     </div>
                 </div>
             </div>

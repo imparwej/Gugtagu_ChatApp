@@ -1,12 +1,17 @@
 import { create } from "zustand";
-import { ChatState, Message, Chat, User, Notification, Story, MessageType } from "../types/chat";
+import {
+    ChatState, Message, Chat, User, Notification, Story,
+    SectionType, Call, PrivacySettings, ChatSettings, NotificationSettings, MessageType
+} from "../types/chat";
 
 const MOCK_CURRENT_USER: User = {
     id: "me",
-    name: "Me",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Profile",
-    status: "Active",
+    name: "mdparwej",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mdparwej",
+    status: "Available",
     online: true,
+    phone: "+91 98765 43210",
+    about: "Hey there! I am using Guftagu."
 };
 
 const MOCK_CHATS: Chat[] = [
@@ -18,6 +23,7 @@ const MOCK_CHATS: Chat[] = [
         timestamp: "10:30 PM",
         online: true,
         unreadCount: 2,
+        isPinned: true,
     },
     {
         id: "2",
@@ -42,6 +48,16 @@ const MOCK_CHATS: Chat[] = [
             { id: "2", name: "Sarah Chen", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah", status: "", online: false },
         ],
         admins: ["1"]
+    },
+    {
+        id: "3",
+        name: "John Doe",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+        lastMessage: "Got the files.",
+        timestamp: "8:45 AM",
+        online: false,
+        unreadCount: 0,
+        isArchived: true,
     }
 ];
 
@@ -63,6 +79,28 @@ const MOCK_STORIES: Story[] = [
         mediaUrl: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=1000",
         timestamp: "5h ago",
         viewed: true,
+    }
+];
+
+const MOCK_CALLS: Call[] = [
+    {
+        id: "c1",
+        userId: "1",
+        userName: "Aman Gupta",
+        userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aman",
+        type: "voice",
+        status: "incoming",
+        timestamp: "Today, 10:45 PM",
+        duration: "05:23"
+    },
+    {
+        id: "c2",
+        userId: "2",
+        userName: "Sarah Chen",
+        userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+        type: "video",
+        status: "missed",
+        timestamp: "Yesterday, 2:15 PM"
     }
 ];
 
@@ -92,12 +130,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
     chats: MOCK_CHATS,
     messages: MOCK_MESSAGES,
     stories: MOCK_STORIES,
+    calls: MOCK_CALLS,
     activeChatId: null,
+    activeSection: "chats",
+    activeOverlay: "none",
+    activeSettingsSubpage: "none",
     onlineUsers: ["1"],
     typingUsers: [],
     unreadCounts: { "1": 2, "g1": 5 },
     notificationCount: 1,
     replyingTo: null,
+    blockedUsers: [],
+
+    // Settings
+    privacySettings: {
+        lastSeen: "everyone",
+        profilePhoto: "everyone",
+        about: "everyone",
+        readReceipts: true,
+    },
+    chatSettings: {
+        wallpaper: "default",
+        fontSize: "medium",
+        enterToSend: true,
+        archiveChats: false,
+    },
+    notificationSettings: {
+        messages: true,
+        groups: true,
+        sounds: "default",
+        vibration: true,
+        previews: true,
+    },
 
     // Notification State
     notifications: [],
@@ -108,7 +172,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setActiveChat: (chatId) =>
         set((state) => {
-            if (!chatId) return { activeChatId: null, replyingTo: null, isNotificationCenterOpen: false };
+            if (!chatId) return { activeChatId: null, replyingTo: null, isNotificationCenterOpen: false, activeOverlay: "none" };
 
             const isNewChat = state.activeChatId !== chatId;
             if (isNewChat) {
@@ -130,12 +194,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     unreadCounts,
                     isNotificationCenterOpen: false,
                     replyingTo: null,
+                    activeOverlay: "none"
                 };
             }
-            return { activeChatId: chatId, isNotificationCenterOpen: false };
+            return { activeChatId: chatId, isNotificationCenterOpen: false, activeOverlay: "none" };
         }),
 
-    sendMessage: (text, type = "text", optional = {}) => {
+    setActiveSection: (section) => set({ activeSection: section, activeOverlay: "none" }),
+    setOverlay: (overlay) => set({ activeOverlay: overlay }),
+    setSettingsSubpage: (subpage) => set({ activeSettingsSubpage: subpage }),
+
+    sendMessage: (text: string, type: MessageType = "text", optional: any = {}) => {
         const state = get();
         if (!state.activeChatId) return;
 
@@ -195,9 +264,44 @@ export const useChatStore = create<ChatState>((set, get) => ({
             unreadCounts: { ...state.unreadCounts, [chatId]: 0 }
         })),
 
+    toggleArchive: (chatId) =>
+        set((state) => ({
+            chats: state.chats.map(c => c.id === chatId ? { ...c, isArchived: !c.isArchived } : c)
+        })),
+
+    togglePin: (chatId) =>
+        set((state) => ({
+            chats: state.chats.map(c => c.id === chatId ? { ...c, isPinned: !c.isPinned } : c)
+        })),
+
     markStoryViewed: (storyId) =>
         set((state) => ({
             stories: state.stories.map(s => s.id === storyId ? { ...s, viewed: true } : s)
+        })),
+
+    addCall: (call) =>
+        set((state) => ({
+            calls: [call, ...state.calls]
+        })),
+
+    updatePrivacySettings: (settings) =>
+        set((state) => ({
+            privacySettings: { ...state.privacySettings, ...settings }
+        })),
+
+    updateChatSettings: (settings) =>
+        set((state) => ({
+            chatSettings: { ...state.chatSettings, ...settings }
+        })),
+
+    updateNotificationSettings: (settings) =>
+        set((state) => ({
+            notificationSettings: { ...state.notificationSettings, ...settings }
+        })),
+
+    updateProfile: (data) =>
+        set((state) => ({
+            currentUser: { ...state.currentUser, ...data }
         })),
 
     setNotificationPermission: (status) => set({ notificationPermission: status }),
