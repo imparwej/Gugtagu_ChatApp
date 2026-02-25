@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, Lock, AlertTriangle, ChevronRight, X, ShieldCheck, KeyRound } from "lucide-react";
+import { Phone, AlertTriangle, ChevronRight, X, KeyRound, Check } from "lucide-react";
 import { useChatStore } from "../../../store/chatStore";
 
 const ToggleRow = ({ label, desc, value, onChange }: { label: string; desc: string; value: boolean; onChange: () => void }) => (

@@ -2,9 +2,11 @@
 
 import React, { useState } from "react";
 import { Search, Plus, Pin, Archive, MoreVertical, Phone, CircleDashed } from "lucide-react";
+import { Story } from "../../types/chat";
 import { useChatStore } from "../../store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { StatusStories } from "../status/StatusStories";
+import { StatusCircles } from "../status/StatusCircles";
 import { CallModal } from "../calls/CallModal";
 import { SettingsModule } from "../settings/SettingsModule";
 
@@ -15,11 +17,13 @@ export const Sidebar = () => {
         setActiveChat,
         activeSection,
         calls,
-        currentUser
+        currentUser,
+        stories
     } = useChatStore();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCall, setSelectedCall] = useState<any>(null);
+    const [viewingUserId, setViewingUserId] = useState<string | null>(null);
 
     const filteredChats = chats.filter(c =>
         !c.isArchived &&
@@ -40,7 +44,7 @@ export const Sidebar = () => {
                 </div>
             </div>
 
-            <StatusStories />
+            <StatusCircles onSelectUser={(uid) => setViewingUserId(uid)} />
 
             <div className="px-6 py-4">
                 <div className="relative group">
@@ -166,31 +170,74 @@ export const Sidebar = () => {
         </div>
     );
 
-    const renderStatusList = () => (
-        <div className="flex flex-col h-full bg-[#0f0f0f] animate-in fade-in slide-in-from-right-8 duration-700">
-            <div className="p-8 pb-4">
-                <h2 className="text-4xl font-black tracking-tighter mb-8">Status</h2>
-                <div className="flex items-center gap-5 p-4 group cursor-pointer hover:bg-white/5 rounded-[2rem] transition-all">
-                    <div className="relative">
-                        <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-white/5 overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-1000">
-                            <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />
+    const renderStatusList = () => {
+        const userStatusGroups = (() => {
+            const map = new Map<string, { stories: Story[], allViewed: boolean, userName: string, userAvatar: string, latestTimestamp: string }>();
+            stories.forEach(s => {
+                if (!map.has(s.userId)) {
+                    map.set(s.userId, { stories: [], allViewed: true, userName: s.userName, userAvatar: s.userAvatar, latestTimestamp: s.timestamp });
+                }
+                const group = map.get(s.userId)!;
+                group.stories.push(s);
+                if (!s.viewed) group.allViewed = false;
+                // Simple latest timestamp check
+                if (s.timestamp > group.latestTimestamp) group.latestTimestamp = s.timestamp;
+            });
+            return Array.from(map.entries());
+        })();
+
+        return (
+            <div className="flex flex-col h-full bg-[#0f0f0f] animate-in fade-in slide-in-from-right-8 duration-700">
+                <div className="p-8 pb-4">
+                    <h2 className="text-4xl font-black tracking-tighter mb-8">Status</h2>
+                    <div className="flex items-center gap-5 p-4 group cursor-pointer hover:bg-white/5 rounded-[2rem] transition-all">
+                        <div className="relative">
+                            <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-white/5 overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-1000">
+                                <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-xl border-4 border-[#0f0f0f] flex items-center justify-center text-black">
+                                <Plus size={14} strokeWidth={4} />
+                            </div>
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-xl border-4 border-[#0f0f0f] flex items-center justify-center text-black">
-                            <Plus size={14} strokeWidth={4} />
+                        <div>
+                            <p className="text-sm font-bold text-white/90">My Status</p>
+                            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">Add to your update</p>
                         </div>
-                    </div>
-                    <div>
-                        <p className="text-sm font-bold text-white/90">My Status</p>
-                        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">Add to your update</p>
                     </div>
                 </div>
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
+                    <div className="px-4 mb-4 text-[9px] font-black text-zinc-700 uppercase tracking-[0.3em]">Recent Updates</div>
+                    {userStatusGroups.length > 0 ? (
+                        userStatusGroups.map(([userId, group]) => (
+                            <div
+                                key={userId}
+                                onClick={() => setViewingUserId(userId)}
+                                className="flex items-center gap-5 p-4 hover:bg-white/5 rounded-[2rem] transition-all cursor-pointer group hover:scale-[1.02] active:scale-95 border border-transparent hover:border-white/5"
+                            >
+                                <div className={`p-0.5 rounded-[1.4rem] ${group.allViewed ? 'border border-zinc-800' : 'bg-white shadow-[0_0_15px_rgba(255,255,255,0.15)]'}`}>
+                                    <div className={`w-14 h-14 rounded-2xl bg-zinc-900 overflow-hidden transition-all duration-700 ${group.allViewed ? 'grayscale opacity-60 group-hover:opacity-100' : 'grayscale group-hover:grayscale-0'}`}>
+                                        <img src={group.userAvatar} alt={group.userName} className="w-full h-full object-cover" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-bold text-white/90 group-hover:text-white transition-colors">{group.userName}</h4>
+                                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-tighter mt-1">{group.latestTimestamp}</p>
+                                </div>
+                                {!group.allViewed && (
+                                    <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="px-4 py-8 text-center">
+                            <CircleDashed className="w-12 h-12 text-zinc-800 mx-auto mb-4 animate-spin-slow" />
+                            <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest">No updates found</p>
+                        </div>
+                    )}
+                </div>
             </div>
-            <div className="flex-1 px-4 py-8">
-                <div className="px-4 mb-4 text-[9px] font-black text-zinc-700 uppercase tracking-[0.3em]">Recent Updates</div>
-                <StatusStories />
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="flex flex-col h-full bg-[#0f0f0f] text-white overflow-hidden relative border-r border-white/10">
@@ -208,6 +255,12 @@ export const Sidebar = () => {
                     {activeSection === "status" && renderStatusList()}
                 </motion.div>
             </AnimatePresence>
+
+            <StatusStories
+                viewingUserId={viewingUserId}
+                allStories={stories}
+                onClose={() => setViewingUserId(null)}
+            />
         </div>
     );
 };
