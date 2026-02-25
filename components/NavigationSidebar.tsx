@@ -5,16 +5,21 @@ import { MessageCircle, CircleDashed, Phone, Settings } from "lucide-react";
 import { useChatStore } from "../store/chatStore";
 import { motion } from "framer-motion";
 import { SectionType } from "../types/chat";
+import { Logo } from "./Logo";
 
-const SECTION_LABELS: Record<SectionType, string> = {
+const SECTION_LABELS: Record<string, string> = {
     chats: "Chats",
     status: "Status",
     calls: "Calls",
     settings: "Settings",
+    profile: "Profile",
 };
 
 export const NavigationSidebar = () => {
-    const { activeSection, setActiveSection, unreadCounts, chats, calls, currentUser } = useChatStore();
+    const {
+        activeSection, setActiveSection, unreadCounts, chats, calls, currentUser,
+        activeSettingsSubpage, setSettingsSubpage
+    } = useChatStore();
 
     const totalChatUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
     const missedCalls = calls.filter(c => c.status === "missed").length;
@@ -29,8 +34,8 @@ export const NavigationSidebar = () => {
     return (
         <div className="w-[72px] h-full bg-black border-r border-white/[0.04] flex flex-col items-center py-6 gap-2 z-50 flex-shrink-0">
             {/* Logo mark */}
-            <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-4 cursor-default">
-                <span className="text-white font-black text-sm">G</span>
+            <div className="mb-4">
+                <Logo iconOnly size={40} />
             </div>
 
             {/* Top nav */}
@@ -92,16 +97,16 @@ export const NavigationSidebar = () => {
                     />
                 </button>
 
-                {/* Avatar */}
+                {/* Avatar / Profile */}
                 <button
-                    onClick={() => setActiveSection("settings")}
+                    onClick={() => { setActiveSection("settings"); setSettingsSubpage("profile"); }}
                     title="Profile"
-                    className="p-0.5 border border-white/10 hover:border-white/25 rounded-2xl transition-all duration-300 group overflow-hidden mt-2"
+                    className={`p-0.5 border rounded-2xl transition-all duration-300 group overflow-hidden mt-2 ${activeSection === "settings" && activeSettingsSubpage === "profile" ? "border-white" : "border-white/10 hover:border-white/25"}`}
                 >
                     <img
                         src={currentUser.avatar}
                         alt="Me"
-                        className="w-9 h-9 rounded-[14px] object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                        className={`w-9 h-9 rounded-[14px] object-cover transition-all duration-500 ${activeSection === "settings" && activeSettingsSubpage === "profile" ? "grayscale-0" : "grayscale group-hover:grayscale-0"}`}
                     />
                 </button>
             </div>

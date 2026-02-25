@@ -4,15 +4,65 @@ import {
     SectionType, Call, PrivacySettings, ChatSettings, NotificationSettings, MessageType, CallType
 } from "../types/chat";
 
-const MOCK_CURRENT_USER: User = {
-    id: "me",
-    name: "mdparwej",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mdparwej",
-    status: "Available",
-    online: true,
-    phone: "+91 98765 43210",
-    about: "Hey there! I am using Guftagu."
-};
+const MOCK_USERS: User[] = [
+    {
+        id: "me",
+        name: "mdparwej",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mdparwej",
+        status: "Available",
+        online: true,
+        phone: "+91 98765 43210",
+        about: "Hey there! I am using Guftagu."
+    },
+    {
+        id: "1",
+        name: "Aman Gupta",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=AmanG",
+        status: "Designer",
+        online: true,
+        phone: "+91 98765 43101",
+        about: "Product Designer @ Startup"
+    },
+    {
+        id: "2",
+        name: "Sarah Chen",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SarahC",
+        status: "Engineer",
+        online: false,
+        phone: "+91 98765 43102",
+        about: "Frontend Engineer"
+    },
+    {
+        id: "4",
+        name: "Priya Sharma",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=PriyaS",
+        status: "Available",
+        online: true,
+        phone: "+91 98765 43104",
+        about: "Working on something exciting!"
+    }
+];
+
+const MOCK_GROUPS: any[] = [ // Using any[] temporarily for speed, will match Group interface
+    {
+        id: "g1",
+        name: "Project Alpha",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=ProjectAlpha",
+        description: "Team collaboration group for Project Alpha.",
+        createdAt: "Jan 12, 2026",
+        members: ["1", "2", "me", "4"],
+        admins: ["1", "me"]
+    },
+    {
+        id: "5",
+        name: "Dev Squad",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DevSquad",
+        description: "Official dev squad of Guftagu.",
+        createdAt: "Feb 05, 2026",
+        members: ["1", "2", "me"],
+        admins: ["me"]
+    }
+];
 
 const MOCK_CHATS: Chat[] = [
     {
@@ -25,6 +75,7 @@ const MOCK_CHATS: Chat[] = [
         unreadCount: 3,
         isPinned: true,
         about: "Product Designer @ Startup",
+        joinedAt: "Jan 1, 2026"
     },
     {
         id: "2",
@@ -35,6 +86,7 @@ const MOCK_CHATS: Chat[] = [
         online: false,
         unreadCount: 0,
         about: "Frontend Engineer",
+        joinedAt: "Jan 15, 2026"
     },
     {
         id: "g1",
@@ -46,23 +98,8 @@ const MOCK_CHATS: Chat[] = [
         unreadCount: 5,
         isGroup: true,
         about: "Team collaboration group for Project Alpha.",
-        members: [
-            { id: "1", name: "Aman Gupta", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=AmanG", status: "Designer", online: true },
-            { id: "2", name: "Sarah Chen", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SarahC", status: "Engineer", online: false },
-            { id: "me", name: "mdparwej", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mdparwej", status: "Available", online: true },
-            { id: "4", name: "Rohan Mehta", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=RohanM", status: "Dev", online: false },
-        ],
+        members: MOCK_USERS.filter(u => ["1", "2", "me", "4"].includes(u.id)),
         admins: ["1", "me"]
-    },
-    {
-        id: "3",
-        name: "John Doe",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=JohnD",
-        lastMessage: "📎 Document shared",
-        timestamp: "8:45 AM",
-        online: false,
-        unreadCount: 0,
-        isArchived: true,
     },
     {
         id: "4",
@@ -72,6 +109,7 @@ const MOCK_CHATS: Chat[] = [
         timestamp: "Mon",
         online: true,
         unreadCount: 1,
+        joinedAt: "Feb 10, 2026"
     },
     {
         id: "5",
@@ -82,11 +120,7 @@ const MOCK_CHATS: Chat[] = [
         online: true,
         unreadCount: 0,
         isGroup: true,
-        members: [
-            { id: "1", name: "Aman Gupta", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=AmanG", status: "", online: true },
-            { id: "2", name: "Sarah Chen", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SarahC", status: "", online: false },
-            { id: "me", name: "mdparwej", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mdparwej", status: "", online: true },
-        ],
+        members: MOCK_USERS.filter(u => ["1", "2", "me"].includes(u.id)),
         admins: ["me"]
     }
 ];
@@ -167,11 +201,13 @@ const MOCK_CALLS: Call[] = [
 
 export const useChatStore = create<ChatState>((set, get) => ({
     isLoggedIn: false,
-    currentUser: MOCK_CURRENT_USER,
+    currentUser: MOCK_USERS[0],
     chats: MOCK_CHATS,
     messages: MOCK_MESSAGES,
     stories: MOCK_STORIES,
     calls: MOCK_CALLS,
+    users: MOCK_USERS,
+    groups: MOCK_GROUPS,
     activeChatId: null,
     activeSection: "chats",
     activeOverlay: "none",
@@ -183,8 +219,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     replyingTo: null,
     blockedUsers: [],
     activeCallTarget: null,
+    isCallMinimized: false,
     inChatSearch: false,
     chatSearchQuery: "",
+    contacts: [
+        { id: "u1", name: "Ananya Sharma", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ananya", status: "Available", online: true },
+        { id: "u2", name: "Kabir Singh", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Kabir", status: "Busy", online: false },
+        { id: "u3", name: "Riya Patel", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Riya", status: "At school", online: true },
+        { id: "u4", name: "Ishaan Gupta", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ishaan", status: "Hey there!", online: false },
+        { id: "u5", name: "Zara Khan", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zara", status: "Urgent calls only", online: true },
+    ],
 
     privacySettings: {
         lastSeen: "everyone",
@@ -318,8 +362,63 @@ export const useChatStore = create<ChatState>((set, get) => ({
     setInChatSearch: (v) => set({ inChatSearch: v, chatSearchQuery: v ? get().chatSearchQuery : "" }),
     setChatSearchQuery: (q) => set({ chatSearchQuery: q }),
 
-    startCall: (target) => set({ activeCallTarget: target, activeOverlay: "call" }),
-    endCall: () => set({ activeCallTarget: null, activeOverlay: "none" }),
+    startCall: (target) => set({ activeCallTarget: target, activeOverlay: "call", isCallMinimized: false }),
+    endCall: () => set({ activeCallTarget: null, activeOverlay: "none", isCallMinimized: false }),
+    setCallMinimized: (minimized) => set({ isCallMinimized: minimized, activeOverlay: minimized ? "none" : "call" }),
+
+    createChat: (contactId) => {
+        const state = get();
+        const contact = state.contacts.find(c => c.id === contactId);
+        if (!contact) return;
+
+        const existingChat = state.chats.find(c => c.id === contactId);
+        if (existingChat) {
+            set({ activeChatId: existingChat.id, activeSection: "chats" });
+            return;
+        }
+
+        const newChat: Chat = {
+            id: contact.id,
+            name: contact.name,
+            avatar: contact.avatar,
+            lastMessage: "No messages yet",
+            timestamp: "Now",
+            online: contact.online,
+            unreadCount: 0,
+            about: contact.status
+        };
+
+        set(state => ({
+            chats: [newChat, ...state.chats],
+            activeChatId: newChat.id,
+            activeSection: "chats"
+        }));
+    },
+
+    createGroup: (name, members) => {
+        const state = get();
+        const groupId = `g_${Date.now()}`;
+        const groupMembers = state.contacts.filter(c => members.includes(c.id));
+
+        const newGroup: Chat = {
+            id: groupId,
+            name,
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${name}`,
+            lastMessage: "Group created",
+            timestamp: "Now",
+            online: false,
+            unreadCount: 0,
+            isGroup: true,
+            members: groupMembers,
+            admins: ["me"]
+        };
+
+        set(state => ({
+            chats: [newGroup, ...state.chats],
+            activeChatId: newGroup.id,
+            activeSection: "chats"
+        }));
+    },
 
     addGroupMember: (chatId, user) =>
         set((state) => ({

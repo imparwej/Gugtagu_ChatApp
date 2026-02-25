@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, Video, Mic, MicOff, Volume2, VolumeX, X } from "lucide-react";
+import { Phone, Video, Mic, MicOff, Volume2, VolumeX, X, ChevronDown } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 
 const formatTime = (seconds: number) => {
@@ -12,7 +12,7 @@ const formatTime = (seconds: number) => {
 };
 
 export const FakeCallOverlay = () => {
-    const { activeCallTarget, endCall, addCall } = useChatStore();
+    const { activeCallTarget, endCall, addCall, setCallMinimized } = useChatStore();
     const [phase, setPhase] = useState<"calling" | "connected">("calling");
     const [seconds, setSeconds] = useState(0);
     const [muted, setMuted] = useState(false);
@@ -58,6 +58,15 @@ export const FakeCallOverlay = () => {
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[600] bg-black flex flex-col items-center justify-between py-20 overflow-hidden"
                 >
+                    <div className="absolute top-8 left-8 z-20">
+                        <button
+                            onClick={() => setCallMinimized(true)}
+                            className="p-2 hover:bg-white/10 rounded-xl text-zinc-500 hover:text-white transition-all"
+                        >
+                            <ChevronDown size={24} />
+                        </button>
+                    </div>
+
                     {/* Ambient glow */}
                     <div className="absolute inset-0 pointer-events-none">
                         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/[0.03] rounded-full blur-3xl" />

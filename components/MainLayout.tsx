@@ -15,6 +15,7 @@ import { SettingsSidebar } from "./settings/SettingsSidebar";
 import { ChatWindow } from "./chat/ChatWindow";
 import { StatusView } from "./status/StatusView";
 import { CallsView } from "./calls/CallsView";
+import { CallOverlay } from "./calls/CallOverlay";
 import { SettingsView } from "./settings/SettingsView";
 
 export const MainLayout = () => {
@@ -42,6 +43,7 @@ export const MainLayout = () => {
 
     return (
         <div className="flex h-screen w-full overflow-hidden bg-black text-white selection:bg-white selection:text-black">
+            <CallOverlay />
             {/* Column 1: Navigation Bar */}
             <NavigationSidebar />
 

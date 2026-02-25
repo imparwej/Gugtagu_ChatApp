@@ -4,9 +4,11 @@ import React, { useEffect, useRef } from "react";
 import { ChatHeader } from "./ChatHeader";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { MinimizedCall } from "./MinimizedCall";
 import { useChatStore } from "../../store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Shield, Lock } from "lucide-react";
+import { Logo } from "../Logo";
 
 const TypingIndicator = () => (
     <div className="flex gap-1 px-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-2xl w-fit">
@@ -43,8 +45,8 @@ export const ChatWindow = () => {
         return (
             <div className="flex-1 flex flex-col items-center justify-center bg-black text-center p-8">
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-sm">
-                    <div className="w-20 h-20 rounded-[2rem] bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-6 mx-auto shadow-2xl">
-                        <Globe size={32} className="text-white/20" />
+                    <div className="mb-8 flex justify-center">
+                        <Logo iconOnly size={80} className="opacity-20" />
                     </div>
                     <h2 className="text-2xl font-black tracking-tight mb-2 text-white">Guftagu Web</h2>
                     <p className="text-zinc-600 text-sm font-light leading-relaxed mb-6">
@@ -66,6 +68,8 @@ export const ChatWindow = () => {
             />
 
             <ChatHeader />
+
+            <MinimizedCall />
 
             {/* Search match count */}
             <AnimatePresence>

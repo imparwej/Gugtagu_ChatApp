@@ -5,14 +5,17 @@ import { Search, Plus, Pin, Archive, Star, Filter, MoreVertical } from "lucide-r
 import { useChatStore } from "@/store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatContextMenu } from "@/components/chat/ChatContextMenu";
+import { Logo } from "../Logo";
+import { NewChatModal } from "./NewChatModal";
 
 type FilterTab = "all" | "unread" | "groups";
 
 export const ChatListSidebar = () => {
-    const { chats, activeChatId, setActiveChat, unreadCounts } = useChatStore();
+    const { chats, activeChatId, setActiveChat, unreadCounts, messages } = useChatStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
     const [contextMenu, setContextMenu] = useState<{ chatId: string; x: number; y: number } | null>(null);
+    const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
     const filtered = chats.filter(c => {
         if (c.isArchived) return false;
@@ -25,7 +28,7 @@ export const ChatListSidebar = () => {
     const pinned = filtered.filter(c => c.isPinned);
     const other = filtered.filter(c => !c.isPinned);
     const archivedCount = chats.filter(c => c.isArchived).length;
-    const starredCount = chats.reduce((acc, c) => acc, 0); // placeholder
+    const starredCount = messages.filter(m => m.isStarred).length;
 
     const handleContextMenu = (e: React.MouseEvent, chatId: string) => {
         e.preventDefault();
@@ -100,6 +103,8 @@ export const ChatListSidebar = () => {
 
     return (
         <div className="flex flex-col h-full bg-[#0a0a0a] relative">
+            <NewChatModal isOpen={isNewChatModalOpen} onClose={() => setIsNewChatModalOpen(false)} />
+
             {/* Context Menu */}
             <AnimatePresence>
                 {contextMenu && (
@@ -113,11 +118,17 @@ export const ChatListSidebar = () => {
             </AnimatePresence>
 
             {/* Header */}
-            <div className="px-5 pt-6 pb-3 flex items-center justify-between gap-2">
-                <h2 className="text-xl font-black tracking-tight">Chats</h2>
-                <button className="p-2 hover:bg-white/5 rounded-xl transition-all text-zinc-500 hover:text-white">
-                    <Plus size={18} />
-                </button>
+            <div className="px-5 pt-6 pb-3 flex flex-col gap-4">
+                <Logo size={32} />
+                <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-xl font-black tracking-tight">Chats</h2>
+                    <button
+                        onClick={() => setIsNewChatModalOpen(true)}
+                        className="p-2 hover:bg-white/5 rounded-xl transition-all text-zinc-500 hover:text-white"
+                    >
+                        <Plus size={18} />
+                    </button>
+                </div>
             </div>
 
             {/* Search */}
@@ -162,6 +173,7 @@ export const ChatListSidebar = () => {
                 <button className="flex-1 flex items-center gap-2 px-3 py-2 bg-white/[0.03] border border-white/[0.04] hover:bg-white/[0.06] rounded-xl transition-all group">
                     <Star size={12} className="text-zinc-600 group-hover:text-white" />
                     <span className="text-[10px] font-bold text-zinc-500 group-hover:text-white transition-colors">Starred</span>
+                    {starredCount > 0 && <span className="ml-auto text-[9px] bg-white/8 px-1.5 py-0.5 rounded font-bold text-zinc-500 font-mono">{starredCount}</span>}
                 </button>
             </div>
 

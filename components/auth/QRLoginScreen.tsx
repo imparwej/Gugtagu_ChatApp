@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Smartphone, Scan, CheckCircle2, ChevronRight, Lock, Wifi } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
+import { Logo } from "../Logo";
 
 const QRCode = () => (
     <div className="relative w-56 h-56">
@@ -32,8 +33,8 @@ const QRCode = () => (
 
         {/* Center logo */}
         <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center border border-white/10 shadow-lg">
-                <span className="text-white font-black text-xs tracking-tighter">G</span>
+            <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center border border-white/10 shadow-lg p-2 overflow-hidden">
+                <Logo iconOnly size={24} />
             </div>
         </div>
 
@@ -83,15 +84,7 @@ export const QRLoginScreen = () => {
                     className="flex flex-col gap-8 max-w-sm"
                 >
                     {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                            <span className="text-black font-black text-xl tracking-tighter">G</span>
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black tracking-tighter text-white">Guftagu</h1>
-                            <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-bold">Web Client</p>
-                        </div>
-                    </div>
+                    <Logo />
 
                     <div>
                         <h2 className="text-4xl font-black tracking-tight text-white leading-tight mb-4">

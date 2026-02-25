@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import { GroupInfo } from "./GroupInfo";
+import { UserInfo } from "./UserInfo";
 import { EncryptionModal } from "./EncryptionModal";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,6 +18,7 @@ export const ChatHeader = () => {
     } = useChatStore();
 
     const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
+    const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isEncryptionOpen, setIsEncryptionOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -25,7 +27,7 @@ export const ChatHeader = () => {
     if (!activeChat) return null;
 
     const menuItems = [
-        { icon: User, label: "View Contact", action: () => { setIsGroupInfoOpen(true); setIsMenuOpen(false); } },
+        { icon: User, label: activeChat.isGroup ? "Group Info" : "View Contact", action: () => { activeChat.isGroup ? setIsGroupInfoOpen(true) : setIsUserInfoOpen(true); setIsMenuOpen(false); } },
         { icon: Image, label: "Media, Links & Docs", action: () => setIsMenuOpen(false) },
         { icon: Search, label: "Search", action: () => { setInChatSearch(true); setIsMenuOpen(false); } },
         { icon: BellOff, label: activeChat.isMuted ? "Unmute Notifications" : "Mute Notifications", action: () => { activeChatId && toggleMute(activeChatId); setIsMenuOpen(false); } },
@@ -37,14 +39,15 @@ export const ChatHeader = () => {
 
     return (
         <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-black/90 border-b border-white/[0.05] backdrop-blur-3xl relative z-30">
-            {/* GroupInfo side panel */}
+            {/* Panels */}
             <GroupInfo isOpen={isGroupInfoOpen} onClose={() => setIsGroupInfoOpen(false)} />
+            <UserInfo isOpen={isUserInfoOpen} onClose={() => setIsUserInfoOpen(false)} userId={activeChat.id} />
             <EncryptionModal isOpen={isEncryptionOpen} onClose={() => setIsEncryptionOpen(false)} contactName={activeChat.name} />
 
             {/* Left: Avatar + Info */}
             <div
                 className="flex items-center gap-3 cursor-pointer group min-w-0"
-                onClick={() => activeChat.isGroup ? setIsGroupInfoOpen(true) : setIsEncryptionOpen(false)}
+                onClick={() => activeChat.isGroup ? setIsGroupInfoOpen(true) : setIsUserInfoOpen(true)}
             >
                 <div className="relative flex-shrink-0">
                     <motion.div

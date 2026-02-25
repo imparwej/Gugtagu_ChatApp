@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import { SettingsSubpage } from "../../types/chat";
+import { Logo } from "../Logo";
 
 export const SettingsSidebar = () => {
     const { activeSettingsSubpage, setSettingsSubpage, currentUser, setLoggedIn } = useChatStore();
@@ -24,6 +25,7 @@ export const SettingsSidebar = () => {
         <div className="flex flex-col h-full bg-[#0a0a0a]">
             {/* Header */}
             <div className="p-6 pb-2">
+                <Logo className="mb-4" size={32} />
                 <h2 className="text-2xl font-black tracking-tighter">Settings</h2>
             </div>
 

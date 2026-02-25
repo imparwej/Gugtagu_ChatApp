@@ -37,6 +37,16 @@ export interface Message {
     searchHighlight?: boolean;
 }
 
+export interface Group {
+    id: string;
+    name: string;
+    avatar: string;
+    description: string;
+    createdAt: string;
+    members: string[]; // User IDs
+    admins: string[]; // User IDs
+}
+
 export interface Chat {
     id: string;
     name: string;
@@ -50,9 +60,10 @@ export interface Chat {
     isPinned?: boolean;
     isMuted?: boolean;
     isDisappearing?: boolean;
-    members?: User[];
+    members?: User[]; // For group chats, keep this for UI convenience or legacy compatibility
     admins?: string[];
     about?: string;
+    joinedAt?: string; // For direct chats
 }
 
 export interface Story {
@@ -143,6 +154,12 @@ export interface ChatState {
     activeCallTarget: { name: string; avatar: string; type: CallType } | null;
     inChatSearch: boolean;
     chatSearchQuery: string;
+    contacts: User[];
+    users: User[];
+    groups: Group[];
+
+    // Call state expansion
+    isCallMinimized: boolean;
 
     // Settings
     privacySettings: PrivacySettings;
@@ -178,6 +195,9 @@ export interface ChatState {
     setChatSearchQuery: (q: string) => void;
     startCall: (target: { name: string; avatar: string; type: CallType }) => void;
     endCall: () => void;
+    setCallMinimized: (minimized: boolean) => void;
+    createChat: (contactId: string) => void;
+    createGroup: (name: string, members: string[]) => void;
 
     // Group Actions
     addGroupMember: (chatId: string, user: User) => void;

@@ -9,8 +9,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Guftagu – Premium Messaging",
-  description: "A premium WhatsApp-style messaging experience built with Next.js.",
+  title: "Guftagu – Purely Premium Messaging",
+  description: "A monochrome premium messaging experience.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
