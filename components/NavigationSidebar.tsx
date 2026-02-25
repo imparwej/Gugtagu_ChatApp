@@ -6,79 +6,104 @@ import { useChatStore } from "../store/chatStore";
 import { motion } from "framer-motion";
 import { SectionType } from "../types/chat";
 
-export const NavigationSidebar = () => {
-    const { activeSection, setActiveSection, notificationCount, currentUser } = useChatStore();
+const SECTION_LABELS: Record<SectionType, string> = {
+    chats: "Chats",
+    status: "Status",
+    calls: "Calls",
+    settings: "Settings",
+};
 
-    const navItems: { id: SectionType; icon: any; label: string }[] = [
-        { id: "chats", icon: MessageCircle, label: "Chats" },
-        { id: "status", icon: CircleDashed, label: "Status" },
-        { id: "calls", icon: Phone, label: "Calls" },
+export const NavigationSidebar = () => {
+    const { activeSection, setActiveSection, unreadCounts, chats, calls, currentUser } = useChatStore();
+
+    const totalChatUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+    const missedCalls = calls.filter(c => c.status === "missed").length;
+    const unreadStories = 0; // placeholder
+
+    const navItems: { id: SectionType; icon: any; badge?: number }[] = [
+        { id: "chats", icon: MessageCircle, badge: totalChatUnread },
+        { id: "status", icon: CircleDashed, badge: unreadStories },
+        { id: "calls", icon: Phone, badge: missedCalls },
     ];
 
     return (
-        <div className="w-[72px] h-full bg-black border-r border-white/5 flex flex-col items-center py-8 gap-8 z-50">
-            {/* Top Section */}
-            <div className="flex flex-col gap-8 items-center">
+        <div className="w-[72px] h-full bg-black border-r border-white/[0.04] flex flex-col items-center py-6 gap-2 z-50 flex-shrink-0">
+            {/* Logo mark */}
+            <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-4 cursor-default">
+                <span className="text-white font-black text-sm">G</span>
+            </div>
+
+            {/* Top nav */}
+            <div className="flex flex-col gap-1 items-center w-full px-2">
                 {navItems.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => setActiveSection(item.id)}
-                        className="relative group p-3 hover:bg-white/5 rounded-2xl transition-all duration-500"
-                        title={item.label}
+                        title={SECTION_LABELS[item.id]}
+                        className="relative group w-full flex items-center justify-center p-3 rounded-2xl transition-all duration-300 hover:bg-white/5"
                     >
-                        <item.icon
-                            size={24}
-                            strokeWidth={activeSection === item.id ? 2.5 : 1.5}
-                            className={`transition-all duration-500 ${activeSection === item.id ? "text-white" : "text-zinc-600 group-hover:text-zinc-300"}`}
-                            fill={activeSection === item.id && item.id === 'chats' ? "white" : "none"}
-                        />
-
+                        {/* Active indicator */}
                         {activeSection === item.id && (
                             <motion.div
-                                layoutId="nav-active"
-                                className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-1.5 h-6 bg-white rounded-r-full shadow-[4px_0_12px_rgba(255,255,255,0.4)]"
+                                layoutId="nav-indicator"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full shadow-[2px_0_12px_rgba(255,255,255,0.5)]"
                             />
                         )}
 
-                        {item.id === 'chats' && notificationCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-white text-black text-[9px] font-black rounded-full flex items-center justify-center border-2 border-black">
-                                {notificationCount}
+                        <item.icon
+                            size={22}
+                            strokeWidth={activeSection === item.id ? 2.5 : 1.5}
+                            className={`transition-all duration-300 ${activeSection === item.id
+                                ? "text-white"
+                                : "text-zinc-600 group-hover:text-zinc-300"
+                                }`}
+                        />
+
+                        {/* Badge */}
+                        {!!item.badge && (
+                            <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] bg-white text-black text-[8px] font-black rounded-full flex items-center justify-center px-1 border-2 border-black">
+                                {item.badge > 99 ? "99+" : item.badge}
                             </span>
                         )}
                     </button>
                 ))}
             </div>
 
-            {/* Bottom Section */}
-            <div className="mt-auto flex flex-col gap-8 items-center">
+            {/* Bottom */}
+            <div className="mt-auto flex flex-col gap-1 items-center w-full px-2">
                 <button
                     onClick={() => setActiveSection("settings")}
-                    className="relative group p-3 hover:bg-white/5 rounded-2xl transition-all duration-500"
                     title="Settings"
+                    className="relative group w-full flex items-center justify-center p-3 rounded-2xl transition-all duration-300 hover:bg-white/5"
                 >
-                    <Settings
-                        size={24}
-                        strokeWidth={activeSection === "settings" ? 2.5 : 1.5}
-                        className={`transition-all duration-500 ${activeSection === "settings" ? "text-white" : "text-zinc-600 group-hover:text-zinc-300"}`}
-                    />
                     {activeSection === "settings" && (
                         <motion.div
-                            layoutId="nav-active"
-                            className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-1.5 h-6 bg-white rounded-r-full shadow-[4px_0_12px_rgba(255,255,255,0.4)]"
+                            layoutId="nav-indicator"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full shadow-[2px_0_12px_rgba(255,255,255,0.5)]"
                         />
                     )}
+                    <Settings
+                        size={22}
+                        strokeWidth={activeSection === "settings" ? 2.5 : 1.5}
+                        className={`transition-all duration-300 ${activeSection === "settings"
+                            ? "text-white"
+                            : "text-zinc-600 group-hover:text-zinc-300"
+                            }`}
+                    />
                 </button>
 
-                <div
+                {/* Avatar */}
+                <button
                     onClick={() => setActiveSection("settings")}
-                    className="relative group p-1 border border-white/5 hover:border-white/20 rounded-2xl transition-all duration-500 cursor-pointer overflow-hidden p-0.5"
+                    title="Profile"
+                    className="p-0.5 border border-white/10 hover:border-white/25 rounded-2xl transition-all duration-300 group overflow-hidden mt-2"
                 >
                     <img
                         src={currentUser.avatar}
-                        alt="Profile"
-                        className="w-10 h-10 rounded-[14px] object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                        alt="Me"
+                        className="w-9 h-9 rounded-[14px] object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                     />
-                </div>
+                </button>
             </div>
         </div>
     );

@@ -3,10 +3,17 @@
 import React from "react";
 import { useChatStore } from "../../store/chatStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, ChevronLeft } from "lucide-react";
+
+import { ProfileSettings } from "./subpages/ProfileSettings";
+import { AccountSettings } from "./subpages/AccountSettings";
+import { PrivacySettings } from "./subpages/PrivacySettings";
+import { ChatsSettings } from "./subpages/ChatsSettings";
+import { NotificationsSettings } from "./subpages/NotificationsSettings";
+import { StorageSettings } from "./subpages/StorageSettings";
 
 export const SettingsView = () => {
-    const { activeSettingsSubpage } = useChatStore();
+    const { activeSettingsSubpage, setSettingsSubpage } = useChatStore();
 
     if (activeSettingsSubpage === "none") {
         return (
@@ -24,38 +31,43 @@ export const SettingsView = () => {
         );
     }
 
+    const renderSubpage = () => {
+        switch (activeSettingsSubpage) {
+            case "profile": return <ProfileSettings />;
+            case "account": return <AccountSettings />;
+            case "privacy": return <PrivacySettings />;
+            case "chats": return <ChatsSettings />;
+            case "notifications": return <NotificationsSettings />;
+            case "storage": return <StorageSettings />;
+            default: return null;
+        }
+    };
+
     return (
-        <div className="flex-1 flex flex-col h-full bg-black overflow-hidden p-12">
+        <div className="flex-1 flex flex-col h-full bg-black overflow-hidden py-6">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeSettingsSubpage}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="max-w-3xl mx-auto w-full"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3, ease: "circOut" }}
+                    className="flex flex-col h-full max-w-4xl mx-auto w-full px-6 md:px-12"
                 >
-                    <header className="mb-12">
-                        <h1 className="text-5xl font-black tracking-tighter capitalize border-b border-white/10 pb-8">{activeSettingsSubpage}</h1>
+                    <header className="flex items-center gap-6 mb-8 mt-2">
+                        <button
+                            onClick={() => setSettingsSubpage("none")}
+                            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-zinc-400 hover:text-white transition-all group"
+                        >
+                            <ChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                        </button>
+                        <h1 className="text-4xl font-black tracking-tighter capitalize">
+                            {activeSettingsSubpage === "storage" ? "Storage & Data" : activeSettingsSubpage}
+                        </h1>
                     </header>
 
-                    <div className="space-y-12">
-                        {/* Placeholder for settings content */}
-                        <div className="bg-white/5 border border-white/5 p-8 rounded-[2rem]">
-                            <h3 className="text-xl font-bold mb-4 tracking-tight">System Configuration</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed mb-8">
-                                Detailed settings for {activeSettingsSubpage} will be implemented here. This is part of the modular architecture.
-                            </p>
-                            <div className="w-full h-[1px] bg-white/5 mb-8" />
-                            <div className="flex items-center justify-between group cursor-pointer">
-                                <div>
-                                    <p className="font-bold text-white/90 group-hover:text-white transition-colors">Placeholder Setting Option</p>
-                                    <p className="text-xs text-zinc-600 mt-1">A description of what this setting does</p>
-                                </div>
-                                <div className="w-12 h-6 bg-zinc-800 rounded-full relative">
-                                    <div className="absolute left-1 top-1 w-4 h-4 bg-white/20 rounded-full" />
-                                </div>
-                            </div>
-                        </div>
+                    <div className="flex-1 overflow-hidden">
+                        {renderSubpage()}
                     </div>
                 </motion.div>
             </AnimatePresence>

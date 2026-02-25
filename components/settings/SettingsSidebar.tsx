@@ -9,7 +9,7 @@ import { useChatStore } from "../../store/chatStore";
 import { SettingsSubpage } from "../../types/chat";
 
 export const SettingsSidebar = () => {
-    const { activeSettingsSubpage, setSettingsSubpage, currentUser } = useChatStore();
+    const { activeSettingsSubpage, setSettingsSubpage, currentUser, setLoggedIn } = useChatStore();
 
     const menuItems: { id: SettingsSubpage; icon: any; label: string; desc: string }[] = [
         { id: "profile", icon: User, label: "Profile", desc: "Name, status, avatar" },
@@ -35,7 +35,7 @@ export const SettingsSidebar = () => {
                 <img src={currentUser.avatar} alt="" className="w-14 h-14 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                 <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-base text-white truncate">{currentUser.name}</h3>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Hey there! I am using Guftagu.</p>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">{currentUser.about || "Hey there! I am using Guftagu."}</p>
                 </div>
             </div>
 
@@ -58,7 +58,10 @@ export const SettingsSidebar = () => {
                     </button>
                 ))}
 
-                <button className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-red-500/10 transition-all group mt-8">
+                <button
+                    onClick={() => setLoggedIn(false)}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-red-500/10 transition-all group mt-8"
+                >
                     <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
                         <LogOut size={18} />
                     </div>

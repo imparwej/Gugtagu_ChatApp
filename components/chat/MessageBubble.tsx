@@ -4,21 +4,37 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Check, CheckCheck, Reply, Trash2, FileText, Download,
-    Play, Pause, MapPin, User, Video, ExternalLink, Share2, Mic
+    Play, Pause, MapPin, User, Video, ExternalLink, Share2, Mic, Star
 } from "lucide-react";
 import { Message } from "../../types/chat";
 import { useChatStore } from "../../store/chatStore";
 
-export const MessageBubble = ({ msg }: { msg: Message }) => {
-    const { id, text, type, timestamp, status, replyTo, contentUrl, fileName, duration, senderName, senderId, location, contact } = msg;
+export const MessageBubble = ({ msg, searchQuery = "" }: { msg: Message; searchQuery?: string }) => {
+    const { id, text, type, timestamp, status, replyTo, contentUrl, fileName, duration, senderName, senderId, location, contact, isStarred } = msg;
     const isSent = senderId === "me";
     const [isHovered, setIsHovered] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
-    const { setReplyingTo, deleteMessage, chats, activeChatId } = useChatStore();
+    const { setReplyingTo, deleteMessage, chats, activeChatId, toggleStarMessage } = useChatStore();
 
     const activeChat = chats.find(c => c.id === activeChatId);
     const isGroup = activeChat?.isGroup;
     const isAdmin = activeChat?.admins?.includes(senderId);
+
+    const highlightText = (content: string, query: string) => {
+        if (!query.trim()) return content;
+        const parts = content.split(new RegExp(`(${query})`, "gi"));
+        return (
+            <>
+                {parts.map((part, i) =>
+                    part.toLowerCase() === query.toLowerCase() ? (
+                        <mark key={i} className="search-match">{part}</mark>
+                    ) : (
+                        part
+                    )
+                )}
+            </>
+        );
+    };
 
     const renderContent = () => {
         switch (type) {
@@ -118,7 +134,11 @@ export const MessageBubble = ({ msg }: { msg: Message }) => {
                     </div>
                 );
             default:
-                return <p className="leading-relaxed whitespace-pre-wrap">{text}</p>;
+                return (
+                    <p className="leading-relaxed whitespace-pre-wrap">
+                        {highlightText(text || "", searchQuery)}
+                    </p>
+                );
         }
     };
 
@@ -146,6 +166,7 @@ export const MessageBubble = ({ msg }: { msg: Message }) => {
                         className={`absolute z-10 top-0 ${isSent ? "-left-20" : "-right-20"} flex items-center gap-1 bg-zinc-900/40 backdrop-blur-xl border border-white/5 p-1.5 rounded-2xl shadow-2xl`}
                     >
                         <button onClick={() => setReplyingTo(msg)} className="p-2 hover:bg-white/10 rounded-xl transition-all text-zinc-500 hover:text-white" title="Reply"><Reply size={14} /></button>
+                        <button onClick={() => toggleStarMessage(id)} className="p-2 hover:bg-white/10 rounded-xl transition-all text-zinc-500 hover:text-yellow-400" title="Star"><Star size={14} fill={isStarred ? "currentColor" : "none"} /></button>
                         <button onClick={() => deleteMessage(id)} className="p-2 hover:bg-white/10 rounded-xl transition-all text-zinc-500 hover:text-red-400" title="Delete"><Trash2 size={14} /></button>
                         <button className="p-2 hover:bg-white/10 rounded-xl transition-all text-zinc-500 hover:text-white" title="Share"><Share2 size={14} /></button>
                     </motion.div>
@@ -156,7 +177,7 @@ export const MessageBubble = ({ msg }: { msg: Message }) => {
                 className={`max-w-full rounded-[1.75rem] text-sm leading-relaxed overflow-hidden shadow-2xl transition-all duration-700 ${isSent
                     ? "bg-zinc-800 text-white border border-white/5 ring-0"
                     : "bg-white/5 backdrop-blur-3xl border border-white/10 text-zinc-100 ring-0"
-                    } ${isHovered ? "border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.03)]" : ""}`}
+                    } ${isHovered ? "border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.03)]" : ""} ${isStarred ? "border-yellow-500/30" : ""}`}
             >
                 {replyTo && (
                     <div
@@ -175,6 +196,7 @@ export const MessageBubble = ({ msg }: { msg: Message }) => {
 
             <div id={id} className={`flex items-center gap-2 mt-1.5 px-2 ${isSent ? "flex-row" : "flex-row-reverse"}`}>
                 <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">{timestamp}</span>
+                {isStarred && <Star size={8} className="text-yellow-500 flex-shrink-0" fill="currentColor" />}
                 {isSent && (
                     <div className="flex items-center">
                         {status === "sent" ? (

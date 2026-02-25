@@ -15,15 +15,15 @@ export interface Message {
     id: string;
     chatId: string;
     senderId: string;
-    senderName?: string; // For group chats
+    senderName?: string;
     text?: string;
     timestamp: string;
     type: MessageType;
     status: MessageStatus;
     replyTo?: Message;
-    contentUrl?: string; // For images, videos, files, voice
+    contentUrl?: string;
     fileName?: string;
-    duration?: number; // For voice/video
+    duration?: number;
     location?: {
         lat: number;
         lng: number;
@@ -33,6 +33,8 @@ export interface Message {
         name: string;
         phone: string;
     };
+    isStarred?: boolean;
+    searchHighlight?: boolean;
 }
 
 export interface Chat {
@@ -46,8 +48,11 @@ export interface Chat {
     isGroup?: boolean;
     isArchived?: boolean;
     isPinned?: boolean;
+    isMuted?: boolean;
+    isDisappearing?: boolean;
     members?: User[];
-    admins?: string[]; // IDs
+    admins?: string[];
+    about?: string;
 }
 
 export interface Story {
@@ -58,6 +63,7 @@ export interface Story {
     mediaUrl: string;
     timestamp: string;
     viewed: boolean;
+    caption?: string;
 }
 
 export type CallType = "voice" | "video";
@@ -72,6 +78,7 @@ export interface Call {
     status: CallStatus;
     timestamp: string;
     duration?: string;
+    dateLabel?: string;
 }
 
 export type SectionType = "chats" | "status" | "calls" | "settings";
@@ -81,6 +88,7 @@ export interface PrivacySettings {
     profilePhoto: "everyone" | "contacts" | "nobody";
     about: "everyone" | "contacts" | "nobody";
     readReceipts: boolean;
+    twoStepVerification: boolean;
 }
 
 export interface ChatSettings {
@@ -93,7 +101,8 @@ export interface ChatSettings {
 export interface NotificationSettings {
     messages: boolean;
     groups: boolean;
-    sounds: string;
+    calls: boolean;
+    sounds: "default" | "silent" | "classic";
     vibration: boolean;
     previews: boolean;
 }
@@ -111,11 +120,11 @@ export interface Notification {
 }
 
 export type NotificationPermissionStatus = "default" | "granted" | "denied";
-
-export type OverlayType = "camera" | "attachment" | "gallery" | "emoji" | "none";
+export type OverlayType = "camera" | "attachment" | "gallery" | "emoji" | "call" | "none";
 export type SettingsSubpage = "profile" | "account" | "privacy" | "chats" | "notifications" | "storage" | "none";
 
 export interface ChatState {
+    isLoggedIn: boolean;
     currentUser: User;
     chats: Chat[];
     messages: Message[];
@@ -131,6 +140,9 @@ export interface ChatState {
     notificationCount: number;
     replyingTo: Message | null;
     blockedUsers: string[];
+    activeCallTarget: { name: string; avatar: string; type: CallType } | null;
+    inChatSearch: boolean;
+    chatSearchQuery: string;
 
     // Settings
     privacySettings: PrivacySettings;
@@ -145,6 +157,7 @@ export interface ChatState {
     isNotificationCenterOpen: boolean;
 
     // Actions
+    setLoggedIn: (v: boolean) => void;
     setActiveChat: (chatId: string | null) => void;
     setActiveSection: (section: SectionType) => void;
     setOverlay: (overlay: OverlayType) => void;
@@ -156,6 +169,20 @@ export interface ChatState {
     markAsRead: (chatId: string) => void;
     toggleArchive: (chatId: string) => void;
     togglePin: (chatId: string) => void;
+    toggleMute: (chatId: string) => void;
+    toggleDisappearing: (chatId: string) => void;
+    clearChat: (chatId: string) => void;
+    deleteChat: (chatId: string) => void;
+    toggleStarMessage: (messageId: string) => void;
+    setInChatSearch: (v: boolean) => void;
+    setChatSearchQuery: (q: string) => void;
+    startCall: (target: { name: string; avatar: string; type: CallType }) => void;
+    endCall: () => void;
+
+    // Group Actions
+    addGroupMember: (chatId: string, user: User) => void;
+    removeGroupMember: (chatId: string, userId: string) => void;
+    exitGroup: (chatId: string) => void;
 
     // Story Actions
     markStoryViewed: (storyId: string) => void;
@@ -168,12 +195,16 @@ export interface ChatState {
     updateChatSettings: (settings: Partial<ChatSettings>) => void;
     updateNotificationSettings: (settings: Partial<NotificationSettings>) => void;
     updateProfile: (data: Partial<User>) => void;
+    blockUser: (userId: string) => void;
+    unblockUser: (userId: string) => void;
 
     // Notification Actions
     setNotificationPermission: (status: NotificationPermissionStatus) => void;
     setFcmToken: (token: string | null) => void;
     setDeviceToken: (token: string | null) => void;
     markNotificationAsRead: (notificationId: string) => void;
+    markAllNotificationsAsRead: () => void;
+    clearNotifications: () => void;
     toggleNotificationCenter: () => void;
     addInAppNotification: (notification: Notification) => void;
 }
